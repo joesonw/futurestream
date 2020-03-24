@@ -17,7 +17,7 @@ export default class Stream<T> {
     static from<I, O>(input: Stream<I>, encode: (data: I) => O): Stream<O> {
         const output = new Stream<O>(() => {});
         (async () => {
-            while (input.hasNext()) {
+            while (await input.hasNext()) {
                 try {
                     const item = await input.fetch();
                     output.push(encode(item));
