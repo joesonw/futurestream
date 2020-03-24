@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist",
+        "target": "es5",
+        "lib": [
+            "es2017"
+        ],
+        "sourceMap": true,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "declaration": true,
+        "baseUrl": "./"
+    },
+    "compileOnSave": false,
+    "include": [
+        "./src/*.ts"
+    ],
+    "exclude": [
+        "./node_modules"
+    ]
+}

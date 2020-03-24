@@ -1,0 +1,36 @@
+{
+  "name": "@joesonw/futurestream",
+  "version": "0.1.1",
+  "description": "a data stream for async data processing",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joesonw/futurestream.git"
+  },
+  "keywords": [
+    "typescript",
+    "stream",
+    "data",
+    "process",
+    "async",
+    "future"
+  ],
+  "author": "Qiaosen Huang",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joesonw/futurestream/issues"
+  },
+  "homepage": "https://github.com/joesonw/futurestream#readme",
+  "devDependencies": {
+    "@types/q": "^1.5.2",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "q": "^1.5.1"
+  }
+}
