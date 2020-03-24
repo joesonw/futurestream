@@ -25,6 +25,7 @@ export default class Stream<T> {
                     output.reject(err);
                 }
             }
+            output.close();
         })();
 
         return output;
@@ -66,6 +67,9 @@ export default class Stream<T> {
     }
 
     hasNext(): PromiseLike<boolean> {
+        if (this._isClosed) {
+            return Promise.resolve(false);
+        }
         const d = Q.defer<boolean>();
         this.nextList.push(d);
         return d.promise;
