@@ -14,6 +14,22 @@ export default class Stream<T> {
         return this._isClosed;
     }
 
+    static fromPromise<T>(promise: PromiseLike<T>): Stream<T> {
+        const stream = new Stream<T>(() => {});
+        (async () => {
+            try {
+                const res = await promise;
+                stream.push(res);
+            } catch (err) {
+                stream.reject(err);
+            } finally {
+                stream.close();
+            }
+        })();
+        
+        return stream;
+    }
+
     static from<I, O>(input: Stream<I>, encode: (data: I) => O): Stream<O> {
         const output = new Stream<O>(() => {});
         (async () => {
