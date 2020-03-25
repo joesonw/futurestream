@@ -94,31 +94,32 @@ export default class Stream<T> implements Interface<T> {
     }
 
     fetch(): Promise<T> {
+        if (this.items.length) {
+            return Promise.resolve(this.items.shift());
+        }
+
         if (this._isClosed) {
-            throw new Error('stream is closed');
+           return Promise.reject(new Error('stream is closed'));
         }
 
         if (this.errorList.length) {
             return Promise.reject(this.errorList.shift());
         }
 
-        if (this.items.length) {
-            return Promise.resolve(this.items.shift());
-        }
         const d = Q.defer<T>();
         this.waitingList.push(d);
         return d.promise as any;
     }
 
     hasNext(): Promise<boolean> {
-        if (this._isClosed) {
-            return Promise.resolve(false);
-        }
-
         if (this.items.length) {
             return Promise.resolve(true);
         }
 
+        if (this._isClosed) {
+            return Promise.resolve(false);
+        }
+        
         const d = Q.defer<boolean>();
         this.nextList.push(d);
         return d.promise as any;
