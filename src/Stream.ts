@@ -1,13 +1,15 @@
 import * as Q from 'q';
+import Interface from './Interface';
+import ReadOnlyStream from './ReadOnlyStream'; 
 
-export default class Stream<T> {
+export default class Stream<T> implements Interface<T> {
     private items: T[] = [];
     private waitingList: Q.Deferred<T>[] = [];
     private _isClosed = false; 
     private errorList: Error[] = [];
     private nextList: Q.Deferred<boolean>[] = [];
 
-    constructor(private onClose: Function) {
+    constructor(private onCloseFunction: Function) {
     }
 
     get isClosed(): boolean {
@@ -21,7 +23,7 @@ export default class Stream<T> {
                 const res = await promise;
                 stream.push(res);
             } catch (err) {
-                stream.reject(err);
+                stream.throw(err);
             } finally {
                 stream.close();
             }
@@ -30,7 +32,7 @@ export default class Stream<T> {
         return stream;
     }
 
-    static from<I, O>(input: Stream<I>, encode: (data: I) => O): Stream<O> {
+    static from<I, O>(input: Interface<I>, encode: (data: I) => O): Stream<O> {
         const output = new Stream<O>(() => {});
         (async () => {
             while (await input.hasNext()) {
@@ -38,7 +40,7 @@ export default class Stream<T> {
                     const item = await input.fetch();
                     output.push(encode(item));
                 } catch (err) {
-                    output.reject(err);
+                    output.throw(err);
                 }
             }
             output.close();
@@ -49,6 +51,19 @@ export default class Stream<T> {
 
     to<O>(decode: (data: T) => O): Stream<O> {
         return Stream.from(this, decode);
+    }
+
+    readOnly(): Interface<T> {
+        return new ReadOnlyStream(this);
+    }
+
+    onClose(onCloseFunction: Function): this {
+        const originalOnCloseFunction = this.onCloseFunction;
+        this.onCloseFunction = () => {
+            originalOnCloseFunction();
+            onCloseFunction();
+        };
+        return this;
     }
 
     push(item: T) {
@@ -63,6 +78,19 @@ export default class Stream<T> {
             d.resolve(item);
         }
         this.resolveNext(true);
+    }
+
+    throw(err: Error) {
+        if (this._isClosed) {
+            throw new Error('stream is closed');
+        }
+
+        const d = this.waitingList.shift();
+        if (!d) {
+            this.errorList.push(err);
+        } else {
+            d.reject(err);
+        }
     }
 
     fetch(): Promise<T> {
@@ -82,13 +110,18 @@ export default class Stream<T> {
         return d.promise as any;
     }
 
-    hasNext(): PromiseLike<boolean> {
+    hasNext(): Promise<boolean> {
         if (this._isClosed) {
             return Promise.resolve(false);
         }
+
+        if (this.items.length) {
+            return Promise.resolve(true);
+        }
+
         const d = Q.defer<boolean>();
         this.nextList.push(d);
-        return d.promise;
+        return d.promise as any;
     }
 
     private resolveNext(next: boolean) {
@@ -102,22 +135,9 @@ export default class Stream<T> {
         if (this._isClosed) return;
         this.resolveNext(false);
         this._isClosed = true;
-        this.onClose();
+        this.onCloseFunction();
         for (const d of this.waitingList) {
             d.reject(new Error('stream is closed'));
-        }
-    }
-
-    reject(err: Error) {
-        if (this._isClosed) {
-            throw new Error('stream is closed');
-        }
-
-        const d = this.waitingList.shift();
-        if (!d) {
-            this.errorList.push(err);
-        } else {
-            d.reject(err);
         }
     }
 }

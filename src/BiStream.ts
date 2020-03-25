@@ -1,9 +1,9 @@
-import Stream from './Stream';
+import Interface from './Interface';
 
-export default class BiStream<I, O> {
+export default class BiStream<I, O> implements Interface<I, O> {
     constructor(
-        private input: Stream<I>,
-        private output: Stream<O>,
+        private input: Interface<I>,
+        private output: Interface<O>,
     ) {
     }
 
@@ -13,6 +13,10 @@ export default class BiStream<I, O> {
 
     push(item: I) {
         this.input.push(item);
+    }
+
+    throw(err: Error) {
+        this.input.throw(err);
     }
 
     fetch() {
@@ -25,9 +29,5 @@ export default class BiStream<I, O> {
 
     close() {
         this.output.close();
-    }
-
-    reject(err: Error) {
-        this.input.reject(err);
     }
 }
