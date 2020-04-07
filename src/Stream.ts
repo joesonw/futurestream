@@ -8,6 +8,7 @@ export default class Stream<T> implements Interface<T> {
     private _isClosed = false; 
     private errorList: Error[] = [];
     private nextList: Q.Deferred<boolean>[] = [];
+    private tapped: Interface<T>[] = [];
 
     constructor(private onCloseFunction: Function) {
     }
@@ -57,6 +58,27 @@ export default class Stream<T> implements Interface<T> {
         return new ReadOnlyStream(this);
     }
 
+    tap(): Stream<T> {
+        const newStream = new Stream<T>(() => {
+            const index = this.tapped.indexOf(newStream);
+            if (index >= 0) {
+                this.tapped.splice(index);
+            }
+        });
+        this.tapped.push(newStream);
+        return newStream;
+    }
+
+    mirror(stream: Stream<T>) {
+        stream.tapped.push(stream)
+        this.onClose(() => {
+            const index = stream.tapped.indexOf(this);
+            if (index >= 0) {
+                stream.tapped.splice(index);
+            }
+        });
+    }
+
     onClose(onCloseFunction: Function): this {
         const originalOnCloseFunction = this.onCloseFunction;
         this.onCloseFunction = () => {
@@ -78,6 +100,10 @@ export default class Stream<T> implements Interface<T> {
             d.resolve(item);
         }
         this.resolveNext(true);
+
+        for (const tap of this.tapped) {
+            tap.push(item);
+        }
     }
 
     throw(err: Error) {
@@ -90,6 +116,10 @@ export default class Stream<T> implements Interface<T> {
             this.errorList.push(err);
         } else {
             d.reject(err);
+        }
+
+        for (const tap of this.tapped) {
+            tap.throw(err);
         }
     }
 
@@ -139,6 +169,9 @@ export default class Stream<T> implements Interface<T> {
         this.onCloseFunction();
         for (const d of this.waitingList) {
             d.reject(new Error('stream is closed'));
+        }
+        for (const tap of this.tapped) {
+            tap.close();
         }
     }
 }

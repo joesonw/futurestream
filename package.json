@@ -1,6 +1,6 @@
 {
   "name": "@joesonw/futurestream",
-  "version": "0.5.3",
+  "version": "0.6.1",
   "description": "a data stream for async data processing",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
